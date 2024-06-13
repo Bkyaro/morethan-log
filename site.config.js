@@ -11,12 +11,12 @@ const CONFIG = {
     github: "Bkyaro",
     instagram: "",
   },
-  // projects: [
-  //   {
-  //     name: `summer-wave`,
-  //     href: "https://github.com/Bkyaro/summer-wave",
-  //   },
-  // ],
+  projects: [
+    {
+      name: `summer-wave`,
+      href: "https://github.com/Bkyaro/summer-wave",
+    },
+  ],
   // blog setting (required)
   blog: {
     title: "Mythin'",
