@@ -21,6 +21,7 @@ const CONFIG = {
   blog: {
     title: "Mythin'",
     description: "welcome to Mythin'!",
+    scheme: "dark", // 'light' | 'dark' | 'system'
   },
 
   // CONFIG configration (required)
