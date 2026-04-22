@@ -1,7 +1,7 @@
 import { CONFIG } from "site.config"
-import { NotionAPI } from "notion-client"
 import { idToUuid } from "notion-utils"
 
+import { notionApi, withNotionRetry } from "./client"
 import getAllPageIds from "src/libs/utils/notion/getAllPageIds"
 import getPageProperties from "src/libs/utils/notion/getPageProperties"
 import { TPosts } from "src/types"
@@ -10,12 +10,12 @@ import { TPosts } from "src/types"
  * @param {{ includePages: boolean }} - false: posts only / true: include pages
  */
 
-// TODO: react query를 사용해서 처음 불러온 뒤로는 해당데이터만 사용하도록 수정
-export const getPosts = async () => {
-  let id = CONFIG.notionConfig.pageId as string
-  const api = new NotionAPI()
+let postsPromise: Promise<TPosts> | null = null
 
-  const response = await api.getPage(id)
+const fetchPosts = async () => {
+  let id = CONFIG.notionConfig.pageId as string
+
+  const response = await withNotionRetry(() => notionApi.getPage(id))
   id = idToUuid(id)
   const collectionRecord = Object.values(response.collection)[0]?.value as any
   const collection = collectionRecord?.value ?? collectionRecord
@@ -45,11 +45,13 @@ export const getPosts = async () => {
         return []
       }
 
-      const collectionData = await api.getCollectionData(
-        collectionId,
-        collectionViewId,
-        collectionView
-      ) as any
+      const collectionData = (await withNotionRetry(() =>
+        notionApi.getCollectionData(
+          collectionId,
+          collectionViewId,
+          collectionView
+        )
+      )) as any
 
       pageIds =
         collectionData?.result?.reducerResults?.collection_group_results
@@ -63,9 +65,7 @@ export const getPosts = async () => {
       const properties = (await getPageProperties(id, block, schema)) || null
       // Add fullwidth, createdtime to properties
       const pageBlockValue = (block[id].value as any)?.value ?? block[id].value
-      properties.createdTime = new Date(
-        pageBlockValue?.created_time
-      ).toString()
+      properties.createdTime = new Date(pageBlockValue?.created_time).toString()
       properties.fullWidth =
         (pageBlockValue?.format as any)?.page_full_width ?? false
 
@@ -82,4 +82,15 @@ export const getPosts = async () => {
     const posts = data as TPosts
     return posts
   }
+}
+
+export const getPosts = async () => {
+  if (!postsPromise) {
+    postsPromise = fetchPosts().catch((error) => {
+      postsPromise = null
+      throw error
+    })
+  }
+
+  return postsPromise
 }

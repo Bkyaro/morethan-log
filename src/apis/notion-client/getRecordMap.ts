@@ -1,4 +1,4 @@
-import { NotionAPI } from "notion-client"
+import { notionApi, withNotionRetry } from "./client"
 
 const normalizeTable = (table: Record<string, any> = {}) => {
   return Object.fromEntries(
@@ -27,8 +27,7 @@ const normalizeTable = (table: Record<string, any> = {}) => {
 }
 
 export const getRecordMap = async (pageId: string) => {
-  const api = new NotionAPI()
-  const recordMap = await api.getPage(pageId)
+  const recordMap = await withNotionRetry(() => notionApi.getPage(pageId))
 
   return {
     ...recordMap,

@@ -1,6 +1,6 @@
 import { getTextContent, getDateValue } from "notion-utils"
-import { NotionAPI } from "notion-client"
 import { BlockMap, CollectionPropertySchemaMap } from "notion-types"
+import { notionApi, withNotionRetry } from "src/apis/notion-client/client"
 import { customMapImageUrl } from "./customMapImageUrl"
 
 async function getPageProperties(
@@ -8,7 +8,6 @@ async function getPageProperties(
   block: BlockMap,
   schema: CollectionPropertySchemaMap
 ) {
-  const api = new NotionAPI()
   const blockEntry = block?.[id]?.value as any
   const blockValue = blockEntry?.value ?? blockEntry
   const rawProperties = Object.entries(blockValue?.properties || [])
@@ -60,7 +59,9 @@ async function getPageProperties(
             const userId = rawUsers[i]?.[0]?.[1]
 
             if (userId) {
-              const res: any = await api.getUsers([userId])
+              const res: any = await withNotionRetry(() =>
+                notionApi.getUsers([userId])
+              )
               const recordValue =
                 res?.recordMapWithRoles?.notion_user?.[userId]?.value
               const resValue =
