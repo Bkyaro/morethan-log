@@ -17,9 +17,9 @@ export const getPosts = async () => {
 
   const response = await api.getPage(id)
   id = idToUuid(id)
-  const collectionValue = Object.values(response.collection)[0]?.value as any
-  const collection = collectionValue?.value ?? collectionValue
-  const block = response.block
+  const collectionRecord = Object.values(response.collection)[0]?.value as any
+  const collection = collectionRecord?.value ?? collectionRecord
+  let block = response.block
   const schema = collection?.schema
 
   const blockValue = (block[id].value as any)?.value ?? block[id].value
@@ -33,7 +33,30 @@ export const getPosts = async () => {
     return []
   } else {
     // Construct Data
-    const pageIds = getAllPageIds(response)
+    let pageIds = getAllPageIds(response)
+
+    if (pageIds.length === 0) {
+      const collectionId = collection?.id ?? Object.keys(response.collection)[0]
+      const collectionViewId = Object.keys(response.collection_view || {})[0]
+      const collectionView =
+        response.collection_view?.[collectionViewId]?.value ?? null
+
+      if (!collectionId || !collectionViewId || !collectionView) {
+        return []
+      }
+
+      const collectionData = await api.getCollectionData(
+        collectionId,
+        collectionViewId,
+        collectionView
+      ) as any
+
+      pageIds =
+        collectionData?.result?.reducerResults?.collection_group_results
+          ?.blockIds ?? []
+      block = collectionData?.recordMap?.block ?? block
+    }
+
     const data = []
     for (let i = 0; i < pageIds.length; i++) {
       const id = pageIds[i]
